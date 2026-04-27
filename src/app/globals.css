@@ -1,26 +1,99 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --cream: #fff9fb;
+  --rose-deep: #7c2d3a;
+  --sage: #6b8f71;
+  --lavender: #9b8fb8;
+  --background: var(--cream);
+  --foreground: #2a1f24;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-cream: var(--cream);
+  --color-rose-950: #3f0f18;
+  --color-rose-900: #7c2d3a;
+  --color-rose-800: #8f3a47;
+  --color-rose-200: #f5c6cf;
+  --color-rose-100: #fce3e8;
+  --color-rose-50: #fff5f7;
+  --color-sage-600: #4f6d54;
+  --color-sage-100: #e3efe4;
+  --font-sans: var(--font-dm-sans);
 }
 
 body {
-  background: var(--background);
+  background: radial-gradient(1200px 600px at 10% -10%, #ffe8f0 0%, transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, #e8f0ff 0%, transparent 50%), var(--cream);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
 }
+
+/* ── 3D animation keyframes ───────────────────────────────────── */
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-10px); }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: translateY(0px); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ── Utility animation classes ────────────────────────────────── */
+
+.animate-float {
+  animation: float 5s ease-in-out infinite;
+}
+
+.animate-fade-up {
+  animation: fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ── 3D card lift ─────────────────────────────────────────────── */
+
+.card-3d {
+  transition: transform 0.38s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.38s ease;
+  will-change: transform;
+  transform: perspective(900px) rotateX(0deg) rotateY(0deg) translateZ(0px);
+}
+
+.card-3d:hover {
+  transform: perspective(900px) rotateX(-4deg) rotateY(4deg) translateZ(12px);
+  box-shadow:
+    14px 22px 44px -12px rgba(124, 45, 58, 0.16),
+    4px 8px 18px -4px rgba(124, 45, 58, 0.10);
+}
+
+/* ── Stat card variant (subtle, no strong tilt) ───────────────── */
+
+.card-3d-subtle {
+  transition: transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.32s ease;
+  will-change: transform;
+}
+
+.card-3d-subtle:hover {
+  transform: perspective(1000px) rotateX(-2deg) rotateY(2deg) translateZ(6px);
+  box-shadow:
+    8px 16px 32px -8px rgba(124, 45, 58, 0.12),
+    2px 4px 10px -2px rgba(124, 45, 58, 0.07);
+}
+
+/* ── Hide scrollbar for date pickers ─────────────────────────── */
+
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
