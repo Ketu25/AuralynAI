@@ -1,9 +1,11 @@
 "use client";
 
-import { signOut } from "next-auth/react";
+import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export function AccountDeleteSection() {
+  const router = useRouter();
   const [phrase, setPhrase] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -38,7 +40,10 @@ export function AccountDeleteSection() {
             setStatus("Could not delete — try again or sign out and contact support.");
             return;
           }
-          await signOut({ callbackUrl: "/" });
+          const supabase = createClient();
+          await supabase.auth.signOut();
+          router.push("/");
+          router.refresh();
         }}
         className="mt-4 rounded-full bg-red-800 px-4 py-2 text-sm font-semibold text-white hover:bg-red-900 disabled:opacity-50"
       >

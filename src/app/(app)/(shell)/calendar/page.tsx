@@ -14,7 +14,6 @@ function asLogs(rows: { periodStartDate: string; periodEndDate: string | null }[
   return rows.map((r) => ({ periodStartDate: r.periodStartDate, periodEndDate: r.periodEndDate }));
 }
 
-/** YYYY-MM-DD → log id for every day covered by a period log. */
 function buildLogByDate(
   rows: { id: string; periodStartDate: string; periodEndDate: string | null }[],
   todayStr: string,
@@ -77,49 +76,62 @@ export default async function CalendarPage({
 
   return (
     <div className="space-y-6 animate-fade-up">
-      <h1 className="text-2xl font-semibold text-rose-950">Calendar</h1>
-      <p className="text-sm text-rose-900/80">
-        Logged bleeding, a soft next-period guess, and a rough fertile window — all labeled so you
-        can keep expectations gentle.
-      </p>
+      {/* Header */}
+      <div className="text-center space-y-1.5">
+        <p className="text-xs font-semibold uppercase tracking-widest text-rose-800/50">
+          Your cycle calendar
+        </p>
+        <h1 className="font-serif text-4xl font-semibold text-rose-950 tracking-tight leading-none">
+          {label}
+        </h1>
+      </div>
 
       {/* Month navigation */}
       <div className="flex items-center justify-between gap-4">
         <Link
           href={`/calendar${prevQ}`}
-          className="rounded-full border border-rose-200 px-4 py-2 text-sm font-medium text-rose-900 hover:bg-rose-50 transition-colors duration-150"
+          className="rounded-full border border-rose-200 bg-white/70 px-5 py-2 text-sm font-medium text-rose-900 backdrop-blur-sm hover:bg-rose-50 transition-colors duration-150"
         >
           ← Prev
         </Link>
-        <p className="text-lg font-semibold text-rose-950">{label}</p>
         <Link
           href={`/calendar${nextQ}`}
-          className="rounded-full border border-rose-200 px-4 py-2 text-sm font-medium text-rose-900 hover:bg-rose-50 transition-colors duration-150"
+          className="rounded-full border border-rose-200 bg-white/70 px-5 py-2 text-sm font-medium text-rose-900 backdrop-blur-sm hover:bg-rose-50 transition-colors duration-150"
         >
           Next →
         </Link>
       </div>
 
+      {/* Calendar grid — key forces remount on navigation, replaying stagger animation */}
       <CalendarGrid
+        key={`${year}-${month}`}
         year={year}
         month={month}
         cells={cells}
         markMap={markMap}
         logByDate={logByDate}
+        todayStr={todayStr}
       />
 
-      {/* Legend */}
-      <div className="flex flex-wrap gap-4 text-xs text-rose-800/80">
-        <span>
-          <span className="mr-1 inline-block h-2 w-2 rounded-full bg-rose-300" /> Logged period
+      {/* Legend — pill swatches */}
+      <div className="flex flex-wrap gap-2.5">
+        <span className="inline-flex items-center gap-2 rounded-full border border-rose-100 bg-white/80 px-3.5 py-1.5 text-xs font-medium text-rose-800 shadow-sm backdrop-blur-sm">
+          <span className="h-2 w-2 rounded-full bg-rose-400" aria-hidden="true" />
+          Logged period
         </span>
-        <span>
-          <span className="mr-1 inline-block h-2 w-2 rounded-full bg-rose-100 ring-1 ring-rose-300" />{" "}
+        <span className="inline-flex items-center gap-2 rounded-full border border-rose-100 bg-white/80 px-3.5 py-1.5 text-xs font-medium text-rose-800 shadow-sm backdrop-blur-sm">
+          <svg width="5" height="7" viewBox="0 0 5 7" fill="rgba(244, 63, 94, 0.65)" aria-hidden="true">
+            <path d="M2.5 0C2.5 0 5 2.8 5 4.2A2.5 2.5 0 0 1 0 4.2C0 2.8 2.5 0 2.5 0Z" />
+          </svg>
           Next period
         </span>
-        <span>
-          <span className="mr-1 inline-block h-2 w-2 rounded-full bg-emerald-200" /> Fertile window
-          (rough)
+        <span className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-white/80 px-3.5 py-1.5 text-xs font-medium text-emerald-700 shadow-sm backdrop-blur-sm">
+          <span className="h-2 w-2 rounded-full bg-emerald-400" aria-hidden="true" />
+          Fertile window
+        </span>
+        <span className="inline-flex items-center gap-2 rounded-full border border-amber-100 bg-white/80 px-3.5 py-1.5 text-xs font-medium text-amber-700 shadow-sm backdrop-blur-sm">
+          <span className="h-2 w-2 rounded-full bg-amber-400 ring-2 ring-amber-300/50" aria-hidden="true" />
+          Today
         </span>
       </div>
     </div>

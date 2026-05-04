@@ -22,6 +22,7 @@
   --color-sage-600: #4f6d54;
   --color-sage-100: #e3efe4;
   --font-sans: var(--font-dm-sans);
+  --font-serif: var(--font-playfair), Georgia, 'Times New Roman', serif;
 }
 
 body {
@@ -91,6 +92,47 @@ body {
   box-shadow:
     8px 16px 32px -8px rgba(124, 45, 58, 0.12),
     2px 4px 10px -2px rgba(124, 45, 58, 0.07);
+}
+
+/* ── Calendar day card animations ────────────────────────────── */
+
+@keyframes card-rise {
+  from { opacity: 0; transform: translateY(10px) scale(0.94); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+.day-card {
+  animation-name: card-rise;
+  animation-duration: 0.36s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  animation-fill-mode: both;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.day-card:not(.day-selected):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px -4px var(--day-glow, rgba(0, 0, 0, 0.08));
+}
+
+/* Pulsing amber ring for today — applied to an absolute <span> inside the card */
+@keyframes today-ring-pulse {
+  0%, 100% { box-shadow: 0 0 0 0   rgba(217, 119, 6, 0.50); }
+  50%       { box-shadow: 0 0 0 5px rgba(217, 119, 6, 0.10); }
+}
+
+.today-ring {
+  animation: today-ring-pulse 2.2s ease-in-out infinite;
+  border: 1.5px solid rgba(217, 119, 6, 0.55);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* ── SVG dot slide (cx/cy CSS geometry transitions) ──────────── */
+
+.dot-slide {
+  transition:
+    cx 0.65s cubic-bezier(0.34, 1.56, 0.64, 1),
+    cy 0.65s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* ── Hide scrollbar for date pickers ─────────────────────────── */

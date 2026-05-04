@@ -1,5 +1,5 @@
 import { HealthDisclaimer } from "@/components/disclaimer";
-import { auth } from "@/auth";
+import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 
 function MoonMark({ size = 36 }: { size?: number }) {
@@ -51,7 +51,8 @@ const features = [
 ];
 
 export default async function HomePage() {
-  const session = await auth();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   return (
     <div className="mx-auto flex min-h-full max-w-4xl flex-col gap-12 px-4 py-16">
       <header className="text-center animate-fade-up">
@@ -66,7 +67,7 @@ export default async function HomePage() {
           ideas for each phase — built with privacy first.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          {session?.user ? (
+          {user ? (
             <Link
               href="/dashboard"
               className="rounded-full bg-rose-900 px-6 py-3 text-sm font-semibold text-white shadow-md hover:bg-rose-800 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5"

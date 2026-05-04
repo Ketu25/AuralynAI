@@ -3,24 +3,17 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
-model User {
-  id           String           @id @default(cuid())
-  email        String           @unique
-  passwordHash String
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-  profile      UserProfile?
-  periodLogs   PeriodLog[]
-  privacy      PrivacySettings?
-}
+// userId in all models is the UUID from Supabase auth.users — no Prisma relation
+// needed since auth lives in a separate schema. Application code always filters
+// by userId; RLS policies add a second layer of protection.
 
 model UserProfile {
-  userId              String   @id
-  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId              String   @id @db.Uuid
   displayName         String?
   timezone            String   @default("UTC")
   defaultCycleLength  Int      @default(28)
@@ -32,8 +25,7 @@ model UserProfile {
 
 model PeriodLog {
   id              String   @id @default(cuid())
-  userId          String
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String   @db.Uuid
   periodStartDate String
   periodEndDate   String?
   symptoms        Json?
@@ -46,8 +38,7 @@ model PeriodLog {
 }
 
 model PrivacySettings {
-  userId         String   @id
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String   @id @db.Uuid
   analyticsOptIn Boolean  @default(false)
   reminderOptIn  Boolean  @default(false)
   createdAt      DateTime @default(now())

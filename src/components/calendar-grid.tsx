@@ -6,6 +6,24 @@ import { useActionState, useState } from "react";
 type Kind = "period_logged" | "predicted_period" | "fertile_estimate";
 type State = { error?: string } | null;
 
+const KIND_STYLE: Record<Kind, { bg: string; dot: string; glow: string }> = {
+  period_logged: {
+    bg: "rgba(244, 63, 94, 0.11)",
+    dot: "#f43f5e",
+    glow: "rgba(244, 63, 94, 0.24)",
+  },
+  predicted_period: {
+    bg: "rgba(244, 63, 94, 0.06)",
+    dot: "#f43f5e",
+    glow: "rgba(244, 63, 94, 0.14)",
+  },
+  fertile_estimate: {
+    bg: "rgba(22, 163, 74, 0.09)",
+    dot: "#16a34a",
+    glow: "rgba(22, 163, 74, 0.20)",
+  },
+};
+
 function formatShort(dateStr: string) {
   const [y, m, d] = dateStr.split("-").map(Number);
   return new Date(y!, m! - 1, d!).toLocaleDateString("en-US", {
@@ -14,18 +32,35 @@ function formatShort(dateStr: string) {
   });
 }
 
+function Teardrop() {
+  return (
+    <svg
+      width="5"
+      height="7"
+      viewBox="0 0 5 7"
+      fill="rgba(244, 63, 94, 0.6)"
+      className="mx-auto mt-0.5 block"
+      aria-hidden="true"
+    >
+      <path d="M2.5 0C2.5 0 5 2.8 5 4.2A2.5 2.5 0 0 1 0 4.2C0 2.8 2.5 0 2.5 0Z" />
+    </svg>
+  );
+}
+
 export function CalendarGrid({
   year,
   month,
   cells,
   markMap,
   logByDate,
+  todayStr,
 }: {
   year: number;
   month: number;
   cells: (number | null)[];
   markMap: Record<string, Kind>;
   logByDate: Record<string, string>;
+  todayStr: string;
 }) {
   const [editMode, setEditMode] = useState(false);
   const [selStart, setSelStart] = useState<string | null>(null);
@@ -40,17 +75,15 @@ export function CalendarGrid({
   }
 
   function handleCellClick(k: string) {
-    // Once both selected, any tap resets to a new start
     if (selEnd || !selStart) {
       setSelStart(k);
       setSelEnd(null);
     } else {
-      // Second tap
       if (k < selStart) {
         setSelStart(k);
         setSelEnd(null);
       } else {
-        setSelEnd(k); // same date = single-day period
+        setSelEnd(k);
       }
     }
   }
@@ -74,7 +107,6 @@ export function CalendarGrid({
   }
 
   const logId = selStart ? logByDate[selStart] : undefined;
-
   const hint = !selStart
     ? "Tap the start date of your period"
     : !selEnd
@@ -82,9 +114,9 @@ export function CalendarGrid({
       : `${formatShort(selStart)} → ${formatShort(selEnd)}`;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {/* Toolbar */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between">
         {editMode ? (
           <p className="text-xs font-medium text-rose-900/60">{hint}</p>
         ) : (
@@ -102,56 +134,106 @@ export function CalendarGrid({
           <button
             type="button"
             onClick={enterEdit}
-            className="rounded-full border border-rose-200 px-3.5 py-1.5 text-xs font-semibold text-rose-800 hover:bg-rose-50 transition-colors duration-150"
+            className="rounded-full border border-rose-200 bg-white/70 px-4 py-1.5 text-xs font-semibold text-rose-800 backdrop-blur-sm hover:bg-rose-50 transition-colors duration-150"
           >
             Edit period
           </button>
         )}
       </div>
 
-      {/* Grid */}
-      <div className="rounded-3xl border border-rose-100 bg-white/90 p-4 shadow-sm">
-        <div className="grid grid-cols-7 gap-1 text-center text-xs text-rose-800/70">
+      {/* Frosted glass calendar container */}
+      <div className="rounded-3xl border border-white/70 bg-white/45 backdrop-blur-md shadow-sm p-4">
+        {/* Day-of-week header */}
+        <div className="grid grid-cols-7 gap-1.5 mb-2">
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
-            <div key={d} className="py-2 font-semibold">
+            <div
+              key={d}
+              className="py-1.5 text-center text-[10px] font-semibold uppercase tracking-widest text-rose-800/35"
+            >
               {d}
             </div>
           ))}
+        </div>
+
+        {/* Day cards */}
+        <div className="grid grid-cols-7 gap-1.5">
           {cells.map((d, i) => {
-            if (d === null) return <div key={`e-${i}`} />;
+            if (d === null) return <div key={`e-${year}-${month}-${i}`} />;
+
             const k = dateKey(d);
             const mark = markMap[k];
+            const kindStyle = mark ? KIND_STYLE[mark] : null;
+            const isToday = k === todayStr;
             const selected = inRange(k);
             const isEdge = k === selStart || k === selEnd;
+            const delay = Math.min(i, 41) * 16;
 
-            const bg = selected
-              ? isEdge
-                ? "bg-rose-800 text-white scale-105 z-10"
-                : "bg-rose-600 text-white"
-              : mark === "period_logged"
-                ? editMode
-                  ? "bg-rose-200/60 text-rose-900/60"
-                  : "bg-rose-300 text-rose-950"
-                : mark === "predicted_period"
-                  ? "bg-rose-100 text-rose-900 ring-1 ring-rose-300"
-                  : mark === "fertile_estimate"
-                    ? "bg-emerald-100 text-emerald-900"
-                    : "bg-cream text-rose-900/80";
+            let bgColor: string;
+            let textClass: string;
+            let borderStyle: string | undefined;
+
+            if (selected && isEdge) {
+              bgColor = "rgba(180, 83, 9, 0.88)";
+              textClass = "text-white font-semibold";
+            } else if (selected) {
+              bgColor = "rgba(217, 119, 6, 0.60)";
+              textClass = "text-white font-medium";
+            } else if (kindStyle) {
+              bgColor = kindStyle.bg;
+              textClass = "text-rose-950/85";
+              if (mark === "predicted_period") {
+                borderStyle = "1px dashed rgba(244, 63, 94, 0.35)";
+              }
+            } else {
+              bgColor = isToday
+                ? "rgba(255, 255, 255, 0.92)"
+                : "rgba(255, 255, 255, 0.55)";
+              textClass = isToday
+                ? "text-amber-800 font-semibold"
+                : "text-rose-900/65";
+            }
 
             return (
               <div
-                key={k}
-                onClick={editMode ? () => handleCellClick(k) : undefined}
-                className={`relative rounded-xl py-3 text-sm font-medium transition-all duration-150 ${bg} ${
-                  editMode
-                    ? "cursor-pointer select-none hover:ring-2 hover:ring-rose-500 hover:ring-offset-1"
-                    : "hover:scale-105"
+                key={`${year}-${month}-${k}`}
+                className={`day-card relative rounded-xl py-2.5 px-0.5 text-center text-sm ${textClass} ${
+                  selected ? "day-selected" : ""
+                } ${editMode ? "cursor-pointer" : ""} ${
+                  editMode && !selected
+                    ? "hover:ring-2 hover:ring-rose-400/50 hover:ring-offset-1"
+                    : ""
                 }`}
+                style={{
+                  backgroundColor: bgColor,
+                  border: !selected ? borderStyle : undefined,
+                  "--day-glow": kindStyle?.glow ?? "rgba(0, 0, 0, 0.06)",
+                  animationDelay: `${delay}ms`,
+                } as React.CSSProperties}
+                onClick={editMode ? () => handleCellClick(k) : undefined}
               >
+                {/* Pulsing amber ring for today */}
+                {isToday && !selected && (
+                  <span className="today-ring absolute inset-0 rounded-xl" aria-hidden="true" />
+                )}
+
                 {d}
+
+                {/* Phase dot */}
+                {!selected && kindStyle && mark !== "predicted_period" && (
+                  <span
+                    className="block h-1 w-1 rounded-full mx-auto mt-0.5"
+                    style={{ backgroundColor: kindStyle.dot }}
+                    aria-hidden="true"
+                  />
+                )}
+
+                {/* Teardrop for predicted period */}
+                {!selected && mark === "predicted_period" && <Teardrop />}
+
+                {/* Edge selection underline */}
                 {isEdge && selected && (
                   <span
-                    className="absolute bottom-1 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-white/70"
+                    className="absolute bottom-1 left-1/2 -translate-x-1/2 h-0.5 w-3 rounded-full bg-white/60"
                     aria-hidden="true"
                   />
                 )}
@@ -161,7 +243,7 @@ export function CalendarGrid({
         </div>
       </div>
 
-      {/* Save bar — appears once start is selected in edit mode */}
+      {/* Save bar */}
       {editMode && selStart && (
         <form action={formAction}>
           <input type="hidden" name="periodStartDate" value={selStart} />

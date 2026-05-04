@@ -1,18 +1,15 @@
-import { auth } from "@/auth";
+import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const userId = session.user.id;
-  const [user, profile, logs, privacy] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: { email: true, createdAt: true },
-    }),
+  const userId = user.id;
+  const [profile, logs, privacy] = await Promise.all([
     prisma.userProfile.findUnique({ where: { userId } }),
     prisma.periodLog.findMany({
       where: { userId },
@@ -23,7 +20,7 @@ export async function GET() {
 
   const payload = {
     exportedAt: new Date().toISOString(),
-    user: { email: user?.email, createdAt: user?.createdAt },
+    user: { email: user.email, createdAt: user.created_at },
     profile,
     privacy,
     periodLogs: logs,
