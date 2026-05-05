@@ -11,21 +11,19 @@ const protectedPrefixes = [
   "/onboarding",
 ];
 
-function getSupabaseCookiePrefix() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!supabaseUrl) return "sb-";
-
+// Computed once at module load — never changes between requests.
+const supabaseCookiePrefix = (() => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!url) return "sb-";
   try {
-    const projectRef = new URL(supabaseUrl).hostname.split(".")[0];
-    return `sb-${projectRef}-auth-token`;
+    return `sb-${new URL(url).hostname.split(".")[0]}-auth-token`;
   } catch {
     return "sb-";
   }
-}
+})();
 
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const supabaseCookiePrefix = getSupabaseCookiePrefix();
 
   // Optimistic check only: supabase-js derives the browser cookie name from the
   // project ref, e.g. "sb-zftomzudmyixfgrsyjic-auth-token" and chunks it as

@@ -18,20 +18,16 @@ export const requireUser = cache(async function requireUser() {
 export const loadAppUser = cache(async function loadAppUser() {
   const user = await requireUser();
 
-  // Each upsert maps to INSERT … ON CONFLICT DO UPDATE — atomic on its own,
-  // so no $transaction needed (also avoids pgbouncer transaction-mode issues).
-  const [profile] = await Promise.all([
-    prisma.userProfile.upsert({
+  // Hot path for returning users: one read, zero writes.
+  // Upsert only fires on the very first request for a brand-new account.
+  let profile = await prisma.userProfile.findUnique({ where: { userId: user.id } });
+  if (!profile) {
+    profile = await prisma.userProfile.upsert({
       where: { userId: user.id },
       create: { userId: user.id, timezone: "UTC" },
       update: {},
-    }),
-    prisma.privacySettings.upsert({
-      where: { userId: user.id },
-      create: { userId: user.id },
-      update: {},
-    }),
-  ]);
+    });
+  }
 
   return { user, profile, userId: user.id };
 });
