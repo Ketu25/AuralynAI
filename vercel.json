@@ -1,5 +1,5 @@
 {
-  "regions": ["iad1"],
+  "regions": ["sfo1"],
   "functions": {
     "src/app/**": {
       "maxDuration": 10

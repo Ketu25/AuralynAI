@@ -8,11 +8,14 @@ import { redirect } from "next/navigation";
 // one getUser() network call instead of making three separate round-trips.
 export const requireUser = cache(async function requireUser() {
   const supabase = await createClient();
+  // getSession() reads the JWT from the cookie locally — no network call unless
+  // the access token is about to expire and needs a refresh. getUser() by
+  // contrast always makes a round-trip to the Supabase Auth API (~30-80ms).
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-  return user;
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.user) redirect("/login");
+  return session.user;
 });
 
 export const loadAppUser = cache(async function loadAppUser() {

@@ -31,10 +31,10 @@ function optionalDateField(formData: FormData, key: string): string {
 async function requireUserId(): Promise<string> {
   const supabase = await createClient();
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
-  return user.id;
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+  return session.user.id;
 }
 
 async function findOverlappingLogs(
@@ -168,8 +168,6 @@ export async function updatePeriodLogAction(_prev: unknown, formData: FormData) 
   const userId = await requireUserId();
   const logId = String(formData.get("logId") ?? "");
   if (!logId) return { error: "Missing log." };
-  const log = await prisma.periodLog.findFirst({ where: { id: logId, userId } });
-  if (!log) return { error: "Log not found." };
   const symptoms = formData.getAll("symptom").map(String);
   const raw = {
     periodStartDate: String(formData.get("periodStartDate") ?? "").trim(),
@@ -184,10 +182,15 @@ export async function updatePeriodLogAction(_prev: unknown, formData: FormData) 
   if (periodEndDate && periodEndDate < periodStartDate) {
     return { error: "End date cannot be before start date." };
   }
-  await prisma.periodLog.update({
-    where: { id: logId },
+
+  // updateMany enforces ownership via userId in the WHERE clause — no separate
+  // findFirst needed. Returns count=0 if the log doesn't exist or belongs to
+  // a different user.
+  const { count } = await prisma.periodLog.updateMany({
+    where: { id: logId, userId },
     data: { periodStartDate, periodEndDate: periodEndDate ?? null, symptoms: sym ?? [], mood: mood ?? null, notes: notes ?? null },
   });
+  if (count === 0) return { error: "Log not found." };
 
   const nowOverlapping = await findOverlappingLogs(userId, periodStartDate, periodEndDate, logId);
   if (nowOverlapping.length > 0) {
