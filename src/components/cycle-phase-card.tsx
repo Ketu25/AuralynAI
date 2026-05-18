@@ -73,17 +73,27 @@ const PHASE_META: Record<
 };
 
 const PHASE_STROKE_COLORS: Record<CyclePhase, string> = {
-  menstrual: "#fda4af",
-  follicular: "#6ee7b7",
-  ovulation: "#fde68a",
-  luteal: "#fdba74",
+ menstrual:  "#e3b3bb", // lightest soft rose
+follicular: "#c9828d", // muted rose
+ovulation:  "#a65c69ff", // deeper berry
+luteal:     "#7c2d3a", // darkest wine
 };
 
-// Open modular heart path. It is intentionally not closed: the two lower ends
-// remain separated, but the silhouette reads as a real heart instead of a loop.
-// The curve uses restrained lobes, a clean center notch, and long tapered sides.
+const PHASE_PATH_RANGES: Record<CyclePhase, { start: number; end: number }> = {
+  menstrual: { start: 0, end: 0.28 },
+  follicular: { start: 0.28, end: 0.48 },
+  ovulation: { start: 0.48, end: 0.64 },
+  luteal: { start: 0.64, end: 1 },
+};
+
+const FLOWER_CENTER = "#ff9800";
+const FLOWER_CENTER_FILL = "#fff3d6";
+const FLOWER_SHADOW = "rgba(255, 152, 0, 0.22)";
+
+// Open modular heart path. The upper lobes mirror around x=160 so the top reads
+// balanced, while the lower ends remain open and intentionally offset.
 const HEART_PATH =
-  "M 118,278 C 88,248 48,204 36,159 C 20,96 52,48 105,43 C 133,40 151,60 160,90 C 169,60 187,40 215,43 C 268,48 300,96 284,159 C 272,204 232,248 202,278";
+  "M 148,270 C 111,246 72,211 50,164 C 23,106 43,58 90,44 C 127,33 153,58 160,102 C 167,58 193,33 230,44 C 277,58 297,106 270,164 C 262,185 249,202 238,217";
 
 function buildSegments(cycleLength: number, periodLength: number) {
   const menEnd = Math.min(Math.max(periodLength, 3), 7);
@@ -109,12 +119,10 @@ function HeartArc({
   todayPct,
   phase,
   segments,
-  cycleLength,
 }: {
   todayPct: number;
   phase: CyclePhase;
   segments: ReturnType<typeof buildSegments>;
-  cycleLength: number;
 }) {
   const activePathRef = useRef<SVGPathElement>(null);
   const [pathLen, setPathLen] = useState(670); // reasonable estimate until mount
@@ -148,8 +156,7 @@ function HeartArc({
   const dotGlowId = `dg-${phase}`;
   const activeSegments = segments
     .map((seg) => {
-      const startPct = (seg.start - 1) / cycleLength;
-      const endPct = seg.end / cycleLength;
+      const { start: startPct, end: endPct } = PHASE_PATH_RANGES[seg.phase];
       const visibleEndPct = Math.min(todayPct, endPct);
       const visiblePct = Math.max(0, visibleEndPct - startPct);
 
@@ -216,7 +223,7 @@ function HeartArc({
         d={HEART_PATH}
         fill="none"
         stroke="rgba(148, 110, 120, 0.20)"
-        strokeWidth="2.5"
+        strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeDasharray={`${futureLen.toFixed(2)} ${pathLen.toFixed(2)}`}
@@ -230,7 +237,7 @@ function HeartArc({
           d={HEART_PATH}
           fill="none"
           stroke={PHASE_STROKE_COLORS[seg.phase]}
-          strokeWidth="5"
+          strokeWidth="10"
           strokeLinecap="round"
           strokeLinejoin="round"
           filter={`url(#${glowId})`}
@@ -246,51 +253,108 @@ function HeartArc({
         />
       ))}
 
-      {/* ── Current-day dot ─────────────────────────────────────── */}
+      {/* ── Current-day daisy marker ────────────────────────────── */}
       {dotPos && (
-        <>
-          {/* Pulsing halo */}
+        <g
+          className="flower-marker"
+          style={{
+            transform: `translate(${dotPos.x}px, ${dotPos.y}px)`,
+          }}
+        >
+          {/* Pulsing flower shadow */}
           <circle
-            cx={dotPos.x}
-            cy={dotPos.y}
-            r="11"
-            fill={meta.glowColor}
+            cx="0"
+            cy="0"
+            r="14"
+            fill={FLOWER_SHADOW}
             filter={`url(#${dotGlowId})`}
           >
             <animate
               attributeName="r"
-              values="11;15;11"
-              dur="2.4s"
+              values="14;22;14"
+              dur="2.8s"
               repeatCount="indefinite"
             />
             <animate
               attributeName="opacity"
-              values="0.65;0;0.65"
-              dur="2.4s"
+              values="0.42;0.08;0.42"
+              dur="2.8s"
+              repeatCount="indefinite"
+            />
+          </circle>
+          <ellipse
+            cx="1.5"
+            cy="3"
+            rx="12"
+            ry="8"
+            fill="rgba(124, 45, 58, 0.10)"
+            opacity="0.45"
+            filter={`url(#${dotGlowId})`}
+          >
+            <animate
+              attributeName="opacity"
+              values="0.25;0.55;0.25"
+              dur="3.4s"
+              repeatCount="indefinite"
+            />
+            <animateTransform
+              attributeName="transform"
+              type="scale"
+              values="0.92 0.88;1.12 1.06;0.92 0.88"
+              dur="3.4s"
+              repeatCount="indefinite"
+            />
+          </ellipse>
+
+          <g>
+            <animateTransform
+              attributeName="transform"
+              type="rotate"
+              values="-4;4;-4"
+              dur="4.2s"
+              repeatCount="indefinite"
+            />
+            {Array.from({ length: 8 }, (_, i) => {
+              const angle = i * 45;
+              return (
+                <ellipse
+                  key={angle}
+                  cx="0"
+                  cy="-8.5"
+                  rx="3.2"
+                  ry="6.2"
+                  fill="white"
+                  stroke="rgba(124, 45, 58, 0.16)"
+                  strokeWidth="0.55"
+                  transform={`rotate(${angle})`}
+                />
+              );
+            })}
+          </g>
+
+          <circle
+            cx="0"
+            cy="0"
+            r="5.2"
+            fill={FLOWER_CENTER_FILL}
+            stroke={FLOWER_CENTER}
+            strokeWidth="1.8"
+          >
+            <animate
+              attributeName="r"
+              values="5.2;5.9;5.2"
+              dur="2s"
               repeatCount="indefinite"
             />
           </circle>
 
-          {/* Outer ring — 12px diameter (r=6 in SVG units ≈ 6×1.2px = 7.2px radius at 360px width) */}
           <circle
-            cx={dotPos.x}
-            cy={dotPos.y}
-            r="6"
-            fill="white"
-            stroke={meta.dotColor}
-            strokeWidth="2"
-            className="dot-slide"
-          />
-
-          {/* Inner fill dot — 4px diameter */}
-          <circle
-            cx={dotPos.x}
-            cy={dotPos.y}
+            cx="0"
+            cy="0"
             r="1.8"
-            fill={meta.dotColor}
-            className="dot-slide"
+            fill={FLOWER_CENTER}
           />
-        </>
+        </g>
       )}
     </svg>
   );
@@ -326,7 +390,6 @@ export function CyclePhaseCard({
           todayPct={todayPct}
           phase={phase}
           segments={segments}
-          cycleLength={cycleLength}
         />
 
         {/* Text floats inside the heart's lower body */}
